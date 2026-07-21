@@ -39,10 +39,9 @@ const memberSchema = new Schema({
     bankAccount: { 
         type: String //set by manager
     }, 
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now }
-});
-
+},
+    {timestamps: true}
+);
 
 export default mongoose.model('Member', memberSchema);
 
