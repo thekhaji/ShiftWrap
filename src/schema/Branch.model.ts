@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-
+import { Branch } from '../libs/types/branch';
 
 const branchSchema = new Schema(
     {
@@ -20,4 +20,4 @@ const branchSchema = new Schema(
     { timestamps: true }
 );
 
-export default mongoose.model('Branch', branchSchema);
+export default mongoose.model<Branch>('Branch', branchSchema);
