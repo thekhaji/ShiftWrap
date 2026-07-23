@@ -45,9 +45,25 @@ class AttendanceService {
         return closed!.toObject();
     }
 
-    async getMemberReport(telegramId: number, month: number, year:number){
+    async getMemberReport(telegramId: number, month: number, year:number): Promise<Attendance[]>{
+        const member = await this.memberModel.findOne({telegramId});
+        if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+        const memberId = member._id;
+
+         const start = new Date(year, month - 1, 1);   // 1st of the target month, 00:00
+        const end = new Date(year, month, 1);          // 1st of the NEXT month, 00:00 (exclusive)
+
+        const shift: Attendance[] = await this.attendanceModel.find({
+            memberId,
+            checkIn: { $gte: start, $lt: end },
+        })
+        .sort({ checkIn: 1 })
+        .lean();
         
+        return shift;
     }
+
+    
 }
 
 export default AttendanceService;

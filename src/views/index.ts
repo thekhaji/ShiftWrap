@@ -17,6 +17,8 @@ function mainMenuKeyboard() {
         .text("🚪 Check Out")
         .row()
         .text("🏢 Filial qo'shish")
+        .row()
+        .text("📊 Hisobot")
         .resized()
         .persistent();
 }
