@@ -11,16 +11,27 @@ export function askPhoneView() {
     };
 }
 
+function mainMenuKeyboard() {
+    return new Keyboard()
+        .text("✅ Check In")
+        .text("🚪 Check Out")
+        .row()
+        .text("🏢 Filial qo'shish")
+        .resized()
+        .persistent();
+}
+
 export function mainMenuView(name: string) {
     return {
         text: `Xush kelibsiz, ${name}! 👋\nKerakli amalni tanlang:`,
-        keyboard: new Keyboard()
-            .text("✅ Check In")
-            .text("🚪 Check Out")
-            .row()
-            .text("🏢 Filial qo'shish")
-            .resized()
-            .persistent(),
+        keyboard: mainMenuKeyboard(),
+    };
+}
+
+export function backToMenuView() {
+    return {
+        text: "Bosh menyu 🏠",
+        keyboard: mainMenuKeyboard(),
     };
 }
 
@@ -35,6 +46,8 @@ export function askLocationView() {
         text: "Joylashuvingizni yuboring 📍",
         keyboard: new Keyboard()
             .requestLocation("📍 Joylashuvni yuborish")
+            .row()
+            .text("🔙 Bosh menyu")
             .resized()
             .oneTime(),
     };
@@ -61,7 +74,10 @@ export function noOpenShiftView() {
 export function askBranchNameView() {
     return {
         text: "Yangi filial nomini kiriting ✍️",
-        keyboard: { remove_keyboard: true as const },
+        keyboard: new Keyboard()
+            .text("🔙 Bosh menyu")
+            .resized()
+            .oneTime(),
     };
 }
 

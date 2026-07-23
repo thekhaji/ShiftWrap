@@ -44,6 +44,10 @@ class AttendanceService {
         );
         return closed!.toObject();
     }
+
+    async getMemberReport(telegramId: number, month: number, year:number){
+        
+    }
 }
 
 export default AttendanceService;

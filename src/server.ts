@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import {Bot, Context, session, SessionFlavor} from 'grammy'
 import { memberController } from './controllers/member.controller';
 import { attendanceController } from './controllers/attendance.controller';
+import { navigationController } from './controllers/navigation.controller';
 import { branchController } from './controllers/branch.controller';
 
 export interface SessionData {
@@ -21,6 +22,7 @@ mongoose.connect(process.env.MONGO_URL as string)
     bot.use(session({ initial: (): SessionData => ({}) }));
     memberController(bot);
     attendanceController(bot);
+    navigationController(bot);
     branchController(bot);
     bot.start();
 })
