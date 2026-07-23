@@ -1,4 +1,5 @@
 import { Bot } from "grammy";
+import { MyContext } from "../server";
 import MemberService from "../models/Member.service";
 import { askPhoneView, mainMenuView, errorView } from "../views/index";
 import Errors, { Message } from "../libs/Errors";
@@ -6,7 +7,7 @@ import { MemberInput } from "../libs/types/member";
 
 const memberService = new MemberService();
 
-export function memberController(bot: Bot) {
+export function memberController(bot: Bot<MyContext>) {
 
     bot.command("start", async (ctx) => {
         if (!ctx.from) return; // nobody to reply to — silent exit is honest

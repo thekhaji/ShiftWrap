@@ -1,14 +1,27 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import mongoose from 'mongoose';
-import {Bot} from 'grammy'
+import {Bot, Context, session, SessionFlavor} from 'grammy'
 import { memberController } from './controllers/member.controller';
+import { attendanceController } from './controllers/attendance.controller';
+import { branchController } from './controllers/branch.controller';
+
+export interface SessionData {
+    awaitingAction?: "checkin" | "checkout" | "register_branch_name" | "register_branch_location";
+    awaitingSince?: number;
+    pendingBranchName?: string;
+}
+
+export type MyContext = Context & SessionFlavor<SessionData>;
 
 mongoose.connect(process.env.MONGO_URL as string)
 .then((data)=>{
     console.log("MongoDB connected successfully");
-    const bot = new Bot(process.env.BOT_TOKEN as string);
+    const bot = new Bot<MyContext>(process.env.BOT_TOKEN as string);
+    bot.use(session({ initial: (): SessionData => ({}) }));
     memberController(bot);
+    attendanceController(bot);
+    branchController(bot);
     bot.start();
 })
 .catch((err)=>{
