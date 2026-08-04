@@ -1,10 +1,12 @@
 import { Bot } from 'grammy';
 import { MyContext } from '../server';
 import BranchService from '../models/Branch.service';
+import MemberService from '../models/Member.service';
 import { askBranchNameView, askLocationView, branchRegisteredView, mainMenuView } from '../views/index';
 import Errors from '../libs/Errors';
 
 const branchService = new BranchService();
+const memberService = new MemberService();
 
 export function branchController(bot: Bot<MyContext>) {
 
@@ -68,8 +70,11 @@ export function branchController(bot: Bot<MyContext>) {
             await ctx.reply(view.text);
 
             if (ctx.from) {
-                const menu = mainMenuView(ctx.from.first_name ?? "");
-                await ctx.reply(menu.text, { reply_markup: menu.keyboard });
+                const member = await memberService.getMemberByTelegramId(ctx.from.id);
+                if (member) {
+                    const menu = mainMenuView(member);
+                    await ctx.reply(menu.text, { reply_markup: menu.keyboard });
+                }
             }
         } catch (err) {
             if (err instanceof Errors) {

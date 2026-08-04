@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, SchemaType } from 'mongoose';
 import {MemberType, MemberStatus} from '../libs/enums/member.enum';
 
 const memberSchema = new Schema({
@@ -29,6 +29,10 @@ const memberSchema = new Schema({
         type: String, 
         enum: MemberStatus, 
         default: MemberStatus.ACTIVE 
+    },
+    branchId: {
+        type: Schema.Types.ObjectId, //set by Boss/Admin
+        ref: 'Branch'
     },
     hourlyRate: { 
         type: Number //set by manager

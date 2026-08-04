@@ -6,6 +6,7 @@ import { memberController } from './controllers/member.controller';
 import { attendanceController } from './controllers/attendance.controller';
 import { navigationController } from './controllers/navigation.controller';
 import { branchController } from './controllers/branch.controller';
+import { reportController } from './controllers/report.controller';
 
 export interface SessionData {
     awaitingAction?: "checkin" | "checkout" | "register_branch_name" | "register_branch_location";
@@ -24,6 +25,7 @@ mongoose.connect(process.env.MONGO_URL as string)
     attendanceController(bot);
     navigationController(bot);
     branchController(bot);
+    reportController(bot);
     bot.start();
 })
 .catch((err)=>{

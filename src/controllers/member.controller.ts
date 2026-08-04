@@ -15,7 +15,7 @@ export function memberController(bot: Bot<MyContext>) {
         const member = await memberService.getMemberByTelegramId(ctx.from.id);
 
         if (member) {
-            const view = mainMenuView(member.name);
+            const view = mainMenuView(member);
             await ctx.reply(view.text, { reply_markup: view.keyboard });
         } else {
             const view = askPhoneView();
@@ -35,7 +35,7 @@ export function memberController(bot: Bot<MyContext>) {
         // FIX 2b — returning user short-circuit
         const existing = await memberService.getMemberByTelegramId(ctx.from.id);
         if (existing) {
-            const view = mainMenuView(existing.name);
+            const view = mainMenuView(existing);
             await ctx.reply(view.text, { reply_markup: view.keyboard });
             return;
         }
@@ -50,13 +50,16 @@ export function memberController(bot: Bot<MyContext>) {
         // FIX 1 — the service THROWS on failure, so try/catch, not if/else
         try {
             const result = await memberService.createMember(memberInput);
-            const view = mainMenuView(result.name);
+            const view = mainMenuView(result);
             await ctx.reply(view.text, { reply_markup: view.keyboard });
         } catch (err) {
             // double-tap race: "already exists" is success from the user's view
             if (err instanceof Errors && err.message === Message.EXISTING_USER) {
-                const view = mainMenuView(memberInput.name);
-                await ctx.reply(view.text, { reply_markup: view.keyboard });
+                const existingMember = await memberService.getMemberByTelegramId(memberInput.telegramId);
+                if (existingMember) {
+                    const view = mainMenuView(existingMember);
+                    await ctx.reply(view.text, { reply_markup: view.keyboard });
+                }
                 return;
             }
             console.error("registration failed:", err);

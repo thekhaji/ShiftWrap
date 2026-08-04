@@ -1,5 +1,7 @@
 import { Keyboard } from "grammy";
 import { Branch } from "../libs/types/branch";
+import { Member } from "../libs/types/member";
+import { hasManagerPermission } from "../libs/utils/permission";
 
 export function askPhoneView() {
     return {
@@ -11,8 +13,8 @@ export function askPhoneView() {
     };
 }
 
-function mainMenuKeyboard() {
-    return new Keyboard()
+function mainMenuKeyboard(member?: Member) {
+    const keyboard =  new Keyboard()
         .text("✅ Check In")
         .text("🚪 Check Out")
         .row()
@@ -21,19 +23,25 @@ function mainMenuKeyboard() {
         .text("📊 Hisobot")
         .resized()
         .persistent();
+
+    if (member && hasManagerPermission(member)) {
+        keyboard.row().text("🏢 Filial hisoboti");
+    }
+
+    return keyboard;
 }
 
-export function mainMenuView(name: string) {
+export function mainMenuView(member: Member) {
     return {
-        text: `Xush kelibsiz, ${name}! 👋\nKerakli amalni tanlang:`,
-        keyboard: mainMenuKeyboard(),
+        text: `Xush kelibsiz, ${member.name}! 👋\nKerakli amalni tanlang:`,
+        keyboard: mainMenuKeyboard(member),
     };
 }
 
-export function backToMenuView() {
+export function backToMenuView(member?: Member) {
     return {
         text: "Bosh menyu 🏠",
-        keyboard: mainMenuKeyboard(),
+        keyboard: mainMenuKeyboard(member),
     };
 }
 

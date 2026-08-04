@@ -3,6 +3,7 @@ import { Member, MemberInput } from '../libs/types/member';
 import {MemberType} from '../libs/enums/member.enum';
 import Errors, { HttpCode, Message } from '../libs/Errors';
 import { T } from '../libs/types/common';
+import { Types } from 'mongoose';
 
 class MemberService {
     private readonly memberModel;
@@ -34,6 +35,11 @@ class MemberService {
         }
 
     } 
+
+    async getMembersByIds(memberIds: Types.ObjectId[]): Promise<Member[]> {
+        const members = await this.memberModel.find({ _id: { $in: memberIds } });
+        return members.map(member => member.toObject() as Member);
+    }
 }
 
 export default MemberService;

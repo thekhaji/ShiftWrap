@@ -2,6 +2,7 @@ import AttendanceModel from '../schema/Attendance.model';
 import MemberModel from '../schema/Member.model';
 import { Attendance } from '../libs/types/attendance';
 import Errors, { Message, HttpCode } from '../libs/Errors';
+import { Types } from 'mongoose';
 
 class AttendanceService {
     private readonly attendanceModel = AttendanceModel;
@@ -50,7 +51,7 @@ class AttendanceService {
         if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
         const memberId = member._id;
 
-         const start = new Date(year, month - 1, 1);   // 1st of the target month, 00:00
+        const start = new Date(year, month - 1, 1);   // 1st of the target month, 00:00
         const end = new Date(year, month, 1);          // 1st of the NEXT month, 00:00 (exclusive)
 
         const shift: Attendance[] = await this.attendanceModel.find({
@@ -61,6 +62,20 @@ class AttendanceService {
         .lean();
         
         return shift;
+    }
+
+    // AttendanceService
+    async getMemberIdsForBranchAndMonth(branchId: Types.ObjectId, year: number, month: number): Promise<Types.ObjectId[]> {
+
+        const start = new Date(year, month - 1, 1);   // 1st of the target month, 00:00
+        const end = new Date(year, month, 1);          // 1st of the NEXT month, 00:00 (exclusive)
+
+        const memberIds = await this.attendanceModel.distinct('memberId', {
+            branchId,
+            checkIn: { $gte: start, $lt: end },
+        });
+        
+        return memberIds;
     }
 
     
