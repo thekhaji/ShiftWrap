@@ -1,6 +1,7 @@
 import BranchModel from '../schema/Branch.model';
 import { Branch, BranchInput } from '../libs/types/branch';
 import Errors, { Message, HttpCode } from '../libs/Errors';
+import { Types } from 'mongoose';
 
 class BranchService{
     private readonly branchModel;
@@ -74,6 +75,10 @@ class BranchService{
         return nearest;
     }
 
+    async getBranchesByIds(branchIds: Types.ObjectId[]): Promise<Branch[]> {
+        const branches = await this.branchModel.find({ _id: { $in: branchIds } });
+        return branches.map(b => b.toObject() as Branch);
+    }
 }
 
 export default BranchService;

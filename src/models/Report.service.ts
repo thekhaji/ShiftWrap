@@ -65,7 +65,7 @@ class ReportService {
         ];
 
         for (const shift of shifts) {
-            shiftsByDay.set(new Date(shift.checkIn).getDate(), shift);
+            shiftsByDay.set(new Date(shift.checkIn).getUTCDate(), shift);
         }
 
         for (let day = 1; day <= daysInMonth; day++) {

@@ -3,6 +3,7 @@ import MemberModel from '../schema/Member.model';
 import { Attendance } from '../libs/types/attendance';
 import Errors, { Message, HttpCode } from '../libs/Errors';
 import { Types } from 'mongoose';
+import { nowInSeoul } from '../libs/utils/time';
 
 class AttendanceService {
     private readonly attendanceModel = AttendanceModel;
@@ -21,7 +22,7 @@ class AttendanceService {
             const shift = await this.attendanceModel.create({
                 memberId: member._id,
                 branchId,
-                checkIn: new Date(),
+                checkIn: nowInSeoul(),
                 hourlyRate: member.hourlyRate,
             });
             return shift.toObject();
@@ -40,7 +41,7 @@ class AttendanceService {
 
         const closed = await this.attendanceModel.findByIdAndUpdate(
             open._id,
-            { checkOut: new Date() },
+            { checkOut: nowInSeoul() },
             { new: true }
         );
         return closed!.toObject();
@@ -51,8 +52,8 @@ class AttendanceService {
         if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
         const memberId = member._id;
 
-        const start = new Date(year, month - 1, 1);   // 1st of the target month, 00:00
-        const end = new Date(year, month, 1);          // 1st of the NEXT month, 00:00 (exclusive)
+        const start = new Date(Date.UTC(year, month - 1, 1));   // 1st of the target month, 00:00 Seoul
+        const end = new Date(Date.UTC(year, month, 1));          // 1st of the NEXT month, 00:00 Seoul (exclusive)
 
         const shift: Attendance[] = await this.attendanceModel.find({
             memberId,
@@ -64,18 +65,47 @@ class AttendanceService {
         return shift;
     }
 
-    // AttendanceService
-    async getMemberIdsForBranchAndMonth(branchId: Types.ObjectId, year: number, month: number): Promise<Types.ObjectId[]> {
 
-        const start = new Date(year, month - 1, 1);   // 1st of the target month, 00:00
-        const end = new Date(year, month, 1);          // 1st of the NEXT month, 00:00 (exclusive)
+    async getMemberIdsForBranchAndMonth(branchId: Types.ObjectId, year: number, month: number): Promise<Types.ObjectId[]> {
+        const start = new Date(Date.UTC(year, month - 1, 1));   // 1st of the target month, 00:00 Seoul
+        const end = new Date(Date.UTC(year, month, 1));          // 1st of the NEXT month, 00:00 Seoul (exclusive)
 
         const memberIds = await this.attendanceModel.distinct('memberId', {
             branchId,
             checkIn: { $gte: start, $lt: end },
         });
-        
+
         return memberIds;
+    }
+
+    
+    async getBranchIdsForMemberAndMonth(memberId: Types.ObjectId, year: number, month: number): Promise<Types.ObjectId[]> {
+        const start = new Date(Date.UTC(year, month - 1, 1));   // 1st of the target month, 00:00 Seoul
+        const end = new Date(Date.UTC(year, month, 1));          // 1st of the NEXT month, 00:00 Seoul (exclusive)
+
+        return this.attendanceModel.distinct('branchId', {
+            memberId,
+            checkIn: { $gte: start, $lt: end },
+        });
+    }
+
+    async getShiftsForMemberBranchAndMonth(memberId: Types.ObjectId, branchId: Types.ObjectId, year: number, month: number) {
+        const start = new Date(Date.UTC(year, month - 1, 1));   // 1st of the target month, 00:00 Seoul
+        const end = new Date(Date.UTC(year, month, 1));          // 1st of the NEXT month, 00:00 Seoul (exclusive)
+
+        return this.attendanceModel
+            .find({ memberId, branchId, checkIn: { $gte: start, $lt: end } })
+            .sort({ checkIn: 1 })
+            .lean();
+    }
+
+    // method for old report generation, to find the first check-in date of a member
+    async getFirstCheckInDate(memberId: Types.ObjectId): Promise<Date | null> {
+        const earliest = await this.attendanceModel
+            .findOne({ memberId })
+            .sort({ checkIn: 1 })
+            .lean();
+        return earliest ? earliest.checkIn : null;
     }
 
     

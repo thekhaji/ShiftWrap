@@ -2,6 +2,7 @@ import { Keyboard } from "grammy";
 import { Branch } from "../libs/types/branch";
 import { Member } from "../libs/types/member";
 import { hasManagerPermission } from "../libs/utils/permission";
+import { InlineKeyboard } from "grammy";
 
 export function askPhoneView() {
     return {
@@ -21,6 +22,8 @@ function mainMenuKeyboard(member?: Member) {
         .text("🏢 Filial qo'shish")
         .row()
         .text("📊 Hisobot")
+        .row()
+        .text("🗂 Eski hisobotlar")
         .resized()
         .persistent();
 
@@ -94,5 +97,31 @@ export function askBranchNameView() {
 export function branchRegisteredView(branch: Branch) {
     return {
         text: `Filial muvaffaqiyatli qo'shildi! 🏢\nNomi: ${branch.name}\nKoordinatalar: ${branch.lat}, ${branch.lng}`,
+    };
+}
+
+export function branchPickerView(branches: Branch[]) {
+    const keyboard = new InlineKeyboard();
+    for (const branch of branches) {
+        keyboard.text(branch.name, `personal_report:${branch._id.toString()}`).row();
+    }
+    return {
+        text: "Qaysi filial uchun hisobot kerak?",
+        keyboard,
+    };
+}
+
+export function monthPickerView(months: { year: number; month: number }[]) {
+    const keyboard = new InlineKeyboard();
+    const monthNames = ["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentyabr","Oktyabr","Noyabr","Dekabr"];
+
+    for (const { year, month } of months) {
+        const label = `${monthNames[month - 1]} ${year}`;
+        keyboard.text(label, `history_month:${year}-${month}`).row();
+    }
+
+    return {
+        text: "Qaysi oy hisobotini ko'rmoqchisiz?",
+        keyboard,
     };
 }

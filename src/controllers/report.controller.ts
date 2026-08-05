@@ -6,7 +6,9 @@ import ReportService from '../models/Report.service';
 import BranchService from '../models/Branch.service';
 import { Attendance } from '../libs/types/attendance';
 import { Member } from '../libs/types/member';
-import {isManagerOf, isBossOrAdmin, hasManagerPermission} from '../libs/utils/permission';
+import { isBossOrAdmin, hasManagerPermission} from '../libs/utils/permission';
+import { branchPickerView, monthPickerView } from '../views';
+import { getMonthsBetween } from '../libs/utils/date';
 
 const attendanceService = new AttendanceService();
 const memberService = new MemberService();
@@ -28,10 +30,25 @@ export function reportController(bot: Bot<MyContext>){
         const year = now.getFullYear();
         const month = now.getMonth() + 1;
         
-        const shifts = await attendanceService.getMemberReport(ctx.from.id, month, year);
-        
-        const buffer = await reportService.generateReportFile(member, shifts, year, month);
-        await ctx.replyWithDocument(new InputFile(Buffer.from(buffer), `${member.name}_${month}_${year}.xlsx`));
+        const branchIds = await attendanceService.getBranchIdsForMemberAndMonth(member._id, year, month);
+
+        if (branchIds.length === 0) {
+            await ctx.reply("Sizda ushbu oy uchun hisobot mavjud emas.");
+            return;
+        }
+
+         if (branchIds.length === 1) {
+            // only one branch worked — skip the picker, generate directly
+            const shifts = await attendanceService.getShiftsForMemberBranchAndMonth(member._id, branchIds[0], year, month);
+            const buffer = await reportService.generateReportFile(member, shifts, year, month);
+            await ctx.replyWithDocument(new InputFile(buffer, `${member.name}_${month}_${year}.xlsx`));
+            return;
+        }
+
+        // more than one branch — show the picker
+        const branches = await branchService.getBranchesByIds(branchIds);
+        const view = branchPickerView(branches);              // ← called here
+        await ctx.reply(view.text, { reply_markup: view.keyboard });
     });
 
     bot.hears("🏢 Filial hisoboti", async (ctx) => {
@@ -64,5 +81,61 @@ export function reportController(bot: Bot<MyContext>){
         const buffer = await reportService.generateBranchReportFile(members, shiftsByMember, year, month);
         await ctx.replyWithDocument(new InputFile(buffer, `${branch!.name}_${year}-${month}.xlsx`));
     });
+
+    bot.hears("🗂 Eski hisobotlar", async (ctx) => {
+        if (!ctx.from) return;
+        const member = await memberService.getMemberByTelegramId(ctx.from.id);
+        if (!member) return;
+
+        const firstCheckIn = await attendanceService.getFirstCheckInDate(member._id);
+        if (!firstCheckIn) {
+            await ctx.reply("Sizda hali hech qanday hisobot yo'q.");
+            return;
+        }
+
+        const now = new Date();
+        const months = getMonthsBetween(
+            firstCheckIn.getFullYear(), firstCheckIn.getMonth() + 1,
+            now.getFullYear(), now.getMonth() + 1
+        );
+
+        if (months.length === 0) {
+            await ctx.reply("Hali o'tgan oylar uchun hisobot mavjud emas.");
+            return;
+        }
+
+        const view = monthPickerView(months);
+        await ctx.reply(view.text, { reply_markup: view.keyboard });
+    });
+
+    bot.callbackQuery(/^history_month:/, async (ctx) => {
+        if (!ctx.from) return;
+        const member = await memberService.getMemberByTelegramId(ctx.from.id);
+        if (!member) return;
+
+        const [year, month] = ctx.callbackQuery.data.split(":")[1].split("-").map(Number);
+        await ctx.answerCallbackQuery();
+
+        // reuse the exact same branch-count logic from the current-month report
+        const branchIds = await attendanceService.getBranchIdsForMemberAndMonth(member._id, year, month);
+
+        if (branchIds.length === 0) {
+            await ctx.reply("Bu oy uchun ma'lumot topilmadi.");
+            return;
+        }
+
+        if (branchIds.length === 1) {
+            const shifts = await attendanceService.getShiftsForMemberBranchAndMonth(member._id, branchIds[0], year, month);
+            const buffer = await reportService.generateReportFile(member, shifts, year, month);
+            await ctx.replyWithDocument(new InputFile(buffer, `${member.name}_${month}_${year}.xlsx`));
+            return;
+        }
+
+        const branches = await branchService.getBranchesByIds(branchIds);
+        const view = branchPickerView(branches); // same view — but callback payload needs the month too now
+        await ctx.reply(view.text, { reply_markup: view.keyboard });
+    });
+
 }
+
 

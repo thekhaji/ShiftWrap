@@ -40,6 +40,11 @@ class MemberService {
         const members = await this.memberModel.find({ _id: { $in: memberIds } });
         return members.map(member => member.toObject() as Member);
     }
+
+    async getAllMembers(): Promise<Member[]> {
+        const members = await this.memberModel.find();
+        return members.map(member => member.toObject() as Member);
+    }
 }
 
 export default MemberService;

@@ -52,10 +52,10 @@ export function attendanceController(bot: Bot<MyContext>) {
             const nearestBranch = await branchService.findNearestBranch(latitude, longitude);
                 if (action === "checkin") {
                     const shift = await attendanceService.checkIn(ctx.from.id, nearestBranch.branch._id);
-                    await ctx.reply(`Ish boshlandi ✅ ${new Date(shift.checkIn).toLocaleTimeString()}`);
+                    await ctx.reply(`Ish boshlandi ✅ ${new Date(shift.checkIn).toLocaleTimeString(undefined, { timeZone: 'UTC' })}`);
                 } else {
                     const shift = await attendanceService.checkOut(ctx.from.id, nearestBranch.branch._id);
-                    await ctx.reply(`Ish tugadi 🚪 ${new Date(shift.checkOut!).toLocaleTimeString()}`);
+                    await ctx.reply(`Ish tugadi 🚪 ${new Date(shift.checkOut!).toLocaleTimeString(undefined, { timeZone: 'UTC' })}`);
                 }
 
         } catch (err) {
