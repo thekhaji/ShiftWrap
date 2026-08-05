@@ -3,7 +3,7 @@ dotenv.config();
 import mongoose from 'mongoose';
 import { Api } from 'grammy';
 import MemberService from '../models/Member.service';
-import { mainMenuView } from '../views/index';
+import { menuUpdatedView } from '../views/index';
 
 const SEND_DELAY_MS = 50; // stay comfortably under Telegram's ~30 msg/sec global rate limit
 
@@ -26,7 +26,7 @@ async function main() {
 
     for (const member of members) {
         try {
-            const view = mainMenuView(member);
+            const view = menuUpdatedView(member);
             await api.sendMessage(member.telegramId, view.text, { reply_markup: view.keyboard });
             sent++;
         } catch (err: any) {

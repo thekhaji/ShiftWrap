@@ -1,8 +1,7 @@
-import { Keyboard } from "grammy";
+import { Keyboard, InlineKeyboard } from "grammy";
 import { Branch } from "../libs/types/branch";
 import { Member } from "../libs/types/member";
 import { hasManagerPermission } from "../libs/utils/permission";
-import { InlineKeyboard } from "grammy";
 
 export function askPhoneView() {
     return {
@@ -15,7 +14,7 @@ export function askPhoneView() {
 }
 
 function mainMenuKeyboard(member?: Member) {
-    const keyboard =  new Keyboard()
+    const keyboard = new Keyboard()
         .text("✅ Check In")
         .text("🚪 Check Out")
         .row()
@@ -29,6 +28,7 @@ function mainMenuKeyboard(member?: Member) {
 
     if (member && hasManagerPermission(member)) {
         keyboard.row().text("🏢 Filial hisoboti");
+        keyboard.row().text("👥 Xodimlar ma'lumotlarini sozlash");
     }
 
     return keyboard;
@@ -44,6 +44,13 @@ export function mainMenuView(member: Member) {
 export function backToMenuView(member?: Member) {
     return {
         text: "Bosh menyu 🏠",
+        keyboard: mainMenuKeyboard(member),
+    };
+}
+
+export function menuUpdatedView(member: Member) {
+    return {
+        text: "Botda yangilanish bo'ldi! ✨\nMenyu yangilandi, quyidagi tugmalardan foydalanishingiz mumkin:",
         keyboard: mainMenuKeyboard(member),
     };
 }
@@ -122,6 +129,18 @@ export function monthPickerView(months: { year: number; month: number }[]) {
 
     return {
         text: "Qaysi oy hisobotini ko'rmoqchisiz?",
+        keyboard,
+    };
+}
+
+export function userPickerView(users: Member[]) {
+    const keyboard = new InlineKeyboard(); 
+    const sortedUsers = users.sort((a, b) => a.name.localeCompare(b.name));
+    for (const user of sortedUsers) {
+        keyboard.text(user.name, `user_report:${user._id.toString()}`).row();
+    }
+    return {
+        text: "Qaysi foydalanuvchi ma'lumotlarini o'zgartirmoqchisiz?",
         keyboard,
     };
 }

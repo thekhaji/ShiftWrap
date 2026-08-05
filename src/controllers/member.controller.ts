@@ -4,6 +4,7 @@ import MemberService from "../models/Member.service";
 import { askPhoneView, mainMenuView, errorView } from "../views/index";
 import Errors, { Message } from "../libs/Errors";
 import { MemberInput } from "../libs/types/member";
+import { userPickerView } from "../views/index";
 
 const memberService = new MemberService();
 
@@ -26,13 +27,13 @@ export function memberController(bot: Bot<MyContext>) {
     bot.on("message:contact", async (ctx) => {
         if (!ctx.from) return;
 
-        // FIX 2a — ownership: reject forwarded contact cards
+        // Reject contact cards forwarded from someone else — only self-shared numbers are valid.
         if (ctx.message.contact.user_id !== ctx.from.id) {
             await ctx.reply("Iltimos, o'zingizning raqamingizni yuboring 🙂");
             return;
         }
 
-        // FIX 2b — returning user short-circuit
+        // Already registered — just show the menu instead of trying to re-register.
         const existing = await memberService.getMemberByTelegramId(ctx.from.id);
         if (existing) {
             const view = mainMenuView(existing);
@@ -47,7 +48,7 @@ export function memberController(bot: Bot<MyContext>) {
             phone: ctx.message.contact.phone_number,
         };
 
-        // FIX 1 — the service THROWS on failure, so try/catch, not if/else
+        // createMember throws rather than returning a failure value, so this needs try/catch.
         try {
             const result = await memberService.createMember(memberInput);
             const view = mainMenuView(result);
@@ -65,5 +66,12 @@ export function memberController(bot: Bot<MyContext>) {
             console.error("registration failed:", err);
             await ctx.reply(errorView().text);
         }
+    });
+
+    bot.hears("👥 Xodimlar ma'lumotlarini sozlash", async (ctx) => {
+        // Implementation for updating member information
+        const users = await memberService.getAllMembers();
+        const view = userPickerView(users);
+        await ctx.reply(view.text, { reply_markup: view.keyboard });
     });
 }

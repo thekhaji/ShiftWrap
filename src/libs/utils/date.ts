@@ -1,3 +1,12 @@
+// Returns the [start, end) instant boundaries for a given calendar month, expressed
+// in the "Seoul wall-clock time labeled as UTC" convention used for stored attendance dates.
+export function monthRange(year: number, month: number): { start: Date; end: Date } {
+    return {
+        start: new Date(Date.UTC(year, month - 1, 1)),
+        end: new Date(Date.UTC(year, month, 1)),
+    };
+}
+
 export function getMonthsBetween(startYear: number, startMonth: number, endYear: number, endMonth: number): { year: number; month: number }[] {
     const months: { year: number; month: number }[] = [];
     let y = startYear;

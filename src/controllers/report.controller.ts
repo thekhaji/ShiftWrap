@@ -5,9 +5,8 @@ import MemberService from '../models/Member.service';
 import ReportService from '../models/Report.service';
 import BranchService from '../models/Branch.service';
 import { Attendance } from '../libs/types/attendance';
-import { Member } from '../libs/types/member';
-import { isBossOrAdmin, hasManagerPermission} from '../libs/utils/permission';
-import { branchPickerView, monthPickerView } from '../views';
+import { isBossOrAdmin, hasManagerPermission } from '../libs/utils/permission';
+import { branchPickerView, monthPickerView } from '../views/index';
 import { getMonthsBetween } from '../libs/utils/date';
 
 const attendanceService = new AttendanceService();
@@ -15,9 +14,8 @@ const memberService = new MemberService();
 const reportService = new ReportService();
 const branchService = new BranchService();
 
-export function reportController(bot: Bot<MyContext>){
-    bot.hears("📊 Hisobot", async (ctx)=>{
-        console.log("u are in report controller!");
+export function reportController(bot: Bot<MyContext>) {
+    bot.hears("📊 Hisobot", async (ctx) => {
         if (!ctx.from) return;
 
         const member = await memberService.getMemberByTelegramId(ctx.from.id);
@@ -29,7 +27,7 @@ export function reportController(bot: Bot<MyContext>){
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth() + 1;
-        
+
         const branchIds = await attendanceService.getBranchIdsForMemberAndMonth(member._id, year, month);
 
         if (branchIds.length === 0) {
@@ -37,7 +35,7 @@ export function reportController(bot: Bot<MyContext>){
             return;
         }
 
-         if (branchIds.length === 1) {
+        if (branchIds.length === 1) {
             // only one branch worked — skip the picker, generate directly
             const shifts = await attendanceService.getShiftsForMemberBranchAndMonth(member._id, branchIds[0], year, month);
             const buffer = await reportService.generateReportFile(member, shifts, year, month);
@@ -45,9 +43,11 @@ export function reportController(bot: Bot<MyContext>){
             return;
         }
 
-        // more than one branch — show the picker
+        // More than one branch — show the picker.
+        // NOTE: branchPickerView's callback_data ("personal_report:<branchId>") has no handler
+        // registered for it anywhere yet, so selecting a branch here currently does nothing.
         const branches = await branchService.getBranchesByIds(branchIds);
-        const view = branchPickerView(branches);              // ← called here
+        const view = branchPickerView(branches);
         await ctx.reply(view.text, { reply_markup: view.keyboard });
     });
 
@@ -56,21 +56,22 @@ export function reportController(bot: Bot<MyContext>){
         const member = await memberService.getMemberByTelegramId(ctx.from.id);
         if (!member) return;
 
-        // determine which branch — manager: their own; boss/admin: needs a picker (future), for now maybe all branches or ask
-        
         if (!hasManagerPermission(member) && !isBossOrAdmin(member)) {
             await ctx.reply("Sizda bu buyruq uchun ruxsat yo'q.");
             return;
         }
 
-        const branchId = member.branchId!; // manager's own branch — boss/admin case needs more thought
+        // Scoped to the manager's own branch. Boss/admin accounts aren't tied to a single
+        // branch, so member.branchId is only guaranteed to exist for the manager case above —
+        // a branch picker for boss/admin isn't implemented yet.
+        const branchId = member.branchId!;
         const branch = await branchService.getBranchById(branchId.toString());
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth() + 1;
 
         const memberIds = await attendanceService.getMemberIdsForBranchAndMonth(branchId, year, month);
-        const members = await memberService.getMembersByIds(memberIds); // new small method needed
+        const members = await memberService.getMembersByIds(memberIds);
 
         const shiftsByMember = new Map<string, Attendance[]>();
         for (const m of members) {
@@ -131,11 +132,12 @@ export function reportController(bot: Bot<MyContext>){
             return;
         }
 
+        // Same picker/handler gap as the current-month flow above — the selected month
+        // also isn't threaded through branchPickerView's callback_data, so this needs the
+        // same fix once the "personal_report:" handler is added.
         const branches = await branchService.getBranchesByIds(branchIds);
-        const view = branchPickerView(branches); // same view — but callback payload needs the month too now
+        const view = branchPickerView(branches);
         await ctx.reply(view.text, { reply_markup: view.keyboard });
     });
-
 }
-
 

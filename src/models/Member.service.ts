@@ -1,8 +1,6 @@
 import MemberModel from '../schema/Member.model';
 import { Member, MemberInput } from '../libs/types/member';
-import {MemberType} from '../libs/enums/member.enum';
 import Errors, { HttpCode, Message } from '../libs/Errors';
-import { T } from '../libs/types/common';
 import { Types } from 'mongoose';
 
 class MemberService {
@@ -11,14 +9,14 @@ class MemberService {
     constructor() {
         this.memberModel = MemberModel;
     }
-    
+
     async getMemberByTelegramId(telegramId: number): Promise<Member | null> {
         const member = await this.memberModel.findOne({ telegramId });
         return member ? (member.toObject() as Member) : null;
     }
 
     async createMember(memberInput: MemberInput): Promise<Member> {
-        const exist =  await this.getMemberByTelegramId(memberInput.telegramId);
+        const exist = await this.getMemberByTelegramId(memberInput.telegramId);
         if (exist) {
             throw new Errors(HttpCode.BAD_REQUEST, Message.EXISTING_USER);
         }
@@ -26,15 +24,14 @@ class MemberService {
         try {
             const newMember = await this.memberModel.create(memberInput);
             return newMember.toObject() as Member;
-        } catch (error:any) {
+        } catch (error: any) {
             console.error("Error creating member:", error);
-            if (error.code === 11000){
-                throw new Errors(HttpCode.BAD_REQUEST, Message.EXISTING_USER); 
+            if (error.code === 11000) {
+                throw new Errors(HttpCode.BAD_REQUEST, Message.EXISTING_USER);
             }
             throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
         }
-
-    } 
+    }
 
     async getMembersByIds(memberIds: Types.ObjectId[]): Promise<Member[]> {
         const members = await this.memberModel.find({ _id: { $in: memberIds } });
@@ -44,6 +41,18 @@ class MemberService {
     async getAllMembers(): Promise<Member[]> {
         const members = await this.memberModel.find();
         return members.map(member => member.toObject() as Member);
+    }
+
+    async updateMember(telegramId: number, updateData: Partial<MemberInput>): Promise<Member> {
+        const member = await this.memberModel.findOneAndUpdate(
+            { telegramId },
+            updateData,
+            { new: true }
+        );
+        if (!member) {
+            throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+        }
+        return member.toObject() as Member;
     }
 }
 
