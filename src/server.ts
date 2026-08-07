@@ -7,11 +7,14 @@ import { attendanceController } from './controllers/attendance.controller';
 import { navigationController } from './controllers/navigation.controller';
 import { branchController } from './controllers/branch.controller';
 import { reportController } from './controllers/report.controller';
+import { EditableMemberField } from './libs/types/member';
 
 export interface SessionData {
-    awaitingAction?: "checkin" | "checkout" | "register_branch_name" | "register_branch_location";
+    awaitingAction?: "checkin" | "checkout" | "register_branch_name" | "register_branch_location" | "edit_member_field";
     awaitingSince?: number;
     pendingBranchName?: string;
+    editingMemberTelegramId?: number;
+    editingField?: EditableMemberField;
 }
 
 export type MyContext = Context & SessionFlavor<SessionData>;

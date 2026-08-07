@@ -1,5 +1,5 @@
 import MemberModel from '../schema/Member.model';
-import { Member, MemberInput } from '../libs/types/member';
+import { Member, MemberInput, MemberManagerUpdate } from '../libs/types/member';
 import Errors, { HttpCode, Message } from '../libs/Errors';
 import { Types } from 'mongoose';
 
@@ -43,7 +43,7 @@ class MemberService {
         return members.map(member => member.toObject() as Member);
     }
 
-    async updateMember(telegramId: number, updateData: Partial<MemberInput>): Promise<Member> {
+    async updateMember(telegramId: number, updateData: MemberManagerUpdate): Promise<Member> {
         const member = await this.memberModel.findOneAndUpdate(
             { telegramId },
             updateData,

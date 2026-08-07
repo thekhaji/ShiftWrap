@@ -15,7 +15,7 @@ class BranchService {
         return branches.map(branch => branch.toObject() as Branch);
     }
 
-    async getBranchById(branchId: string): Promise<Branch | null> {
+    async getBranchById(branchId: Types.ObjectId): Promise<Branch | null> {
         const branch = await this.branchModel.findById(branchId);
         return branch ? (branch.toObject() as Branch) : null;
     }

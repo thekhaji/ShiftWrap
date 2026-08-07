@@ -65,7 +65,7 @@ export function reportController(bot: Bot<MyContext>) {
         // branch, so member.branchId is only guaranteed to exist for the manager case above —
         // a branch picker for boss/admin isn't implemented yet.
         const branchId = member.branchId!;
-        const branch = await branchService.getBranchById(branchId.toString());
+        const branch = await branchService.getBranchById(branchId);
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth() + 1;

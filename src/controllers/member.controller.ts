@@ -1,10 +1,13 @@
 import { Bot } from "grammy";
 import { MyContext } from "../server";
 import MemberService from "../models/Member.service";
-import { askPhoneView, mainMenuView, errorView } from "../views/index";
+import { askPhoneView, mainMenuView, errorView, userEditView, userPickerView, askEditFieldDetailView } from "../views/index";
 import Errors, { Message } from "../libs/Errors";
-import { MemberInput } from "../libs/types/member";
-import { userPickerView } from "../views/index";
+import { MemberInput, MemberManagerUpdate, EditableMemberField, EDITABLE_MEMBER_FIELDS } from "../libs/types/member";
+
+function isEditableField(field: string): field is EditableMemberField {
+    return (EDITABLE_MEMBER_FIELDS as readonly string[]).includes(field);
+}
 
 const memberService = new MemberService();
 
@@ -73,5 +76,89 @@ export function memberController(bot: Bot<MyContext>) {
         const users = await memberService.getAllMembers();
         const view = userPickerView(users);
         await ctx.reply(view.text, { reply_markup: view.keyboard });
+    });
+
+    bot.callbackQuery(/^user_picker:/, async (ctx) => {
+        if (!ctx.from) return;
+        const userTgId = ctx.callbackQuery.data.split(":")[1];
+
+        const member = await memberService.getMemberByTelegramId(Number(userTgId));
+        if (!member) return;
+
+        await ctx.answerCallbackQuery();
+        const view = await userEditView(member);
+        await ctx.reply(view.text, { reply_markup: view.keyboard });
+    });
+
+    bot.callbackQuery(/^edit_user:/, async (ctx) => {
+        if (!ctx.from) return;
+
+        const [telegramId, field] = ctx.callbackQuery.data.split(":")[1].split(",");
+        if (!isEditableField(field)) return;
+
+        const member = await memberService.getMemberByTelegramId(Number(telegramId));
+        if (!member) return;
+
+        // Remember who/what we're waiting on so the message:text handler below
+        // knows how to interpret the manager's next message.
+        ctx.session.awaitingAction = "edit_member_field";
+        ctx.session.awaitingSince = Date.now();
+        ctx.session.editingMemberTelegramId = member.telegramId;
+        ctx.session.editingField = field;
+
+        await ctx.answerCallbackQuery();
+        const view = askEditFieldDetailView(member.name, field);
+        await ctx.reply(view.text, { reply_markup: view.keyboard });
+    });
+
+    bot.on("message:text", async (ctx, next) => {
+        if (ctx.session.awaitingAction !== "edit_member_field") return next();
+
+        const since = ctx.session.awaitingSince ?? 0;
+        const expired = Date.now() - since > 60_000;
+        const targetTelegramId = ctx.session.editingMemberTelegramId;
+        const field = ctx.session.editingField;
+
+        ctx.session.awaitingAction = undefined;
+        ctx.session.awaitingSince = undefined;
+        ctx.session.editingMemberTelegramId = undefined;
+        ctx.session.editingField = undefined;
+
+        if (expired || !targetTelegramId || !field) {
+            await ctx.reply("Vaqt tugadi. Qaytadan urinib ko'ring.");
+            return;
+        }
+
+        const rawValue = ctx.message.text.trim();
+        if (!rawValue) {
+            await ctx.reply("Qiymat bo'sh bo'lishi mumkin emas. Qaytadan urinib ko'ring.");
+            return;
+        }
+
+        const updateData: MemberManagerUpdate = {};
+        if (field === "hourlyRate") {
+            const parsed = Number(rawValue);
+            if (Number.isNaN(parsed)) {
+                await ctx.reply("Iltimos, faqat raqam kiriting.");
+                return;
+            }
+            updateData.hourlyRate = parsed;
+        } else {
+            updateData[field] = rawValue;
+        }
+
+        try {
+            const updated = await memberService.updateMember(targetTelegramId, updateData);
+            await ctx.reply("Ma'lumot muvaffaqiyatli yangilandi ✅");
+            const view = await userEditView(updated);
+            await ctx.reply(view.text, { reply_markup: view.keyboard });
+        } catch (err) {
+            if (err instanceof Errors) {
+                await ctx.reply(err.message);
+            } else {
+                console.error("member update failed:", err);
+                await ctx.reply("Xatolik yuz berdi.");
+            }
+        }
     });
 }

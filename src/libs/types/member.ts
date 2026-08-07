@@ -25,3 +25,19 @@ export interface MemberInput {
     type?: MemberType;
     status?: MemberStatus;
 }
+
+// Fields a manager/boss/admin may set on an existing member — distinct from MemberInput
+// (which shapes self-registration) so a member can never submit these about themselves.
+export interface MemberManagerUpdate {
+    name?: string;
+    phone?: string;
+    branchId?: Types.ObjectId;
+    hourlyRate?: number;
+    bankName?: string;
+    bankAccount?: string;
+}
+
+// The subset of MemberManagerUpdate collected via free-text prompts (the "✍️ type a new
+// value" flow). branchId is deliberately excluded — it's set via a branch picker, not text.
+export const EDITABLE_MEMBER_FIELDS = ["phone", "bankName", "bankAccount", "hourlyRate"] as const;
+export type EditableMemberField = typeof EDITABLE_MEMBER_FIELDS[number];
