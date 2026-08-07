@@ -22,17 +22,16 @@ function mainMenuKeyboard(member?: Member) {
         .text("✅ Check In")
         .text("🚪 Check Out")
         .row()
-        .text("🏢 Filial qo'shish")
-        .row()
         .text("📊 Hisobot")
         .row()
         .text("🗂 Eski hisobotlar")
         .resized()
         .persistent();
 
-    if (member && hasManagerPermission(member)) {
+    if (member && (hasManagerPermission(member) || member?.type === "BOSS" || member?.type === "ADMIN")) {
         keyboard.row().text("🏢 Filial hisoboti");
         keyboard.row().text("👥 Xodimlar ma'lumotlarini sozlash");
+        keyboard.row().text("🏢 Filial qo'shish");
     }
 
     return keyboard;
@@ -111,13 +110,13 @@ export function branchRegisteredView(branch: Branch) {
     };
 }
 
-export function branchPickerView(branches: Branch[]) {
+export function branchPickerView(branches: Branch[], year: number, month: number) {
     const keyboard = new InlineKeyboard();
     for (const branch of branches) {
-        keyboard.text(branch.name, `personal_report:${branch._id.toString()}`).row();
+        keyboard.text(branch.name, `personal_report:${branch._id.toString()},${year},${month}`).row();
     }
     return {
-        text: "Qaysi filial uchun hisobot kerak?",
+        text: `Qaysi filial uchun ${month}/${year} hisobot kerak?`,
         keyboard,
     };
 }

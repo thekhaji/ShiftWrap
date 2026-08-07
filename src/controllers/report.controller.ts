@@ -1,4 +1,5 @@
 import { Bot, InputFile } from 'grammy';
+import { ObjectId } from 'mongodb';
 import { MyContext } from '../server';
 import AttendanceService from '../models/Attendance.service';
 import MemberService from '../models/Member.service';
@@ -43,11 +44,8 @@ export function reportController(bot: Bot<MyContext>) {
             return;
         }
 
-        // More than one branch — show the picker.
-        // NOTE: branchPickerView's callback_data ("personal_report:<branchId>") has no handler
-        // registered for it anywhere yet, so selecting a branch here currently does nothing.
         const branches = await branchService.getBranchesByIds(branchIds);
-        const view = branchPickerView(branches);
+        const view = branchPickerView(branches, year, month);
         await ctx.reply(view.text, { reply_markup: view.keyboard });
     });
 
@@ -131,13 +129,22 @@ export function reportController(bot: Bot<MyContext>) {
             await ctx.replyWithDocument(new InputFile(buffer, `${member.name}_${month}_${year}.xlsx`));
             return;
         }
-
-        // Same picker/handler gap as the current-month flow above — the selected month
-        // also isn't threaded through branchPickerView's callback_data, so this needs the
-        // same fix once the "personal_report:" handler is added.
         const branches = await branchService.getBranchesByIds(branchIds);
-        const view = branchPickerView(branches);
+        const view = branchPickerView(branches, year, month);
         await ctx.reply(view.text, { reply_markup: view.keyboard });
+    });
+
+    bot.callbackQuery(/^personal_report:/, async (ctx) => {
+        if (!ctx.from) return;
+        const member = await memberService.getMemberByTelegramId(ctx.from.id);
+        if (!member) return; 
+        const [branchIdStr, year, month] = ctx.callbackQuery.data.split(":")[1].split(",");
+        const branchId = new ObjectId(branchIdStr); // convert string to ObjectId
+        await ctx.answerCallbackQuery();
+
+        const shifts = await attendanceService.getShiftsForMemberBranchAndMonth(member._id, branchId, Number(year), Number(month));
+        const buffer = await reportService.generateReportFile(member, shifts, Number(year), Number(month));
+        await ctx.replyWithDocument(new InputFile(buffer, `${member.name}_${month}_${year}.xlsx`));
     });
 }
 
