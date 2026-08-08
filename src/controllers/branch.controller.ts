@@ -9,7 +9,6 @@ const branchService = new BranchService();
 const memberService = new MemberService();
 
 export function branchController(bot: Bot<MyContext>) {
-
     bot.hears("🏢 Filial qo'shish", async (ctx) => {
         if (!ctx.from) return;
         ctx.session.awaitingAction = "register_branch_name";

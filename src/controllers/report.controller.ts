@@ -1,5 +1,5 @@
 import { Bot, InputFile } from 'grammy';
-import { ObjectId } from 'mongodb';
+import { Types } from 'mongoose';
 import { MyContext } from '../server';
 import AttendanceService from '../models/Attendance.service';
 import MemberService from '../models/Member.service';
@@ -108,12 +108,12 @@ export function reportController(bot: Bot<MyContext>) {
     });
 
     bot.callbackQuery(/^history_month:/, async (ctx) => {
+        await ctx.answerCallbackQuery();
         if (!ctx.from) return;
         const member = await memberService.getMemberByTelegramId(ctx.from.id);
         if (!member) return;
 
         const [year, month] = ctx.callbackQuery.data.split(":")[1].split("-").map(Number);
-        await ctx.answerCallbackQuery();
 
         // reuse the exact same branch-count logic from the current-month report
         const branchIds = await attendanceService.getBranchIdsForMemberAndMonth(member._id, year, month);
@@ -135,12 +135,12 @@ export function reportController(bot: Bot<MyContext>) {
     });
 
     bot.callbackQuery(/^personal_report:/, async (ctx) => {
+        await ctx.answerCallbackQuery();
         if (!ctx.from) return;
         const member = await memberService.getMemberByTelegramId(ctx.from.id);
-        if (!member) return; 
+        if (!member) return;
         const [branchIdStr, year, month] = ctx.callbackQuery.data.split(":")[1].split(",");
-        const branchId = new ObjectId(branchIdStr); // convert string to ObjectId
-        await ctx.answerCallbackQuery();
+        const branchId = new Types.ObjectId(branchIdStr);
 
         const shifts = await attendanceService.getShiftsForMemberBranchAndMonth(member._id, branchId, Number(year), Number(month));
         const buffer = await reportService.generateReportFile(member, shifts, Number(year), Number(month));

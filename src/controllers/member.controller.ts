@@ -3,16 +3,20 @@ import { MyContext } from "../server";
 import MemberService from "../models/Member.service";
 import { askPhoneView, mainMenuView, errorView, userEditView, userPickerView, askEditFieldDetailView } from "../views/index";
 import Errors, { Message } from "../libs/Errors";
-import { MemberInput, MemberManagerUpdate, EditableMemberField, EDITABLE_MEMBER_FIELDS } from "../libs/types/member";
+import { Member, MemberInput, MemberManagerUpdate, EditableMemberField, EDITABLE_MEMBER_FIELDS } from "../libs/types/member";
+import { hasManagerPermission, isBossOrAdmin } from "../libs/utils/permission";
 
 function isEditableField(field: string): field is EditableMemberField {
     return (EDITABLE_MEMBER_FIELDS as readonly string[]).includes(field);
 }
 
+function canManageEmployees(member: Member): boolean {
+    return hasManagerPermission(member) || isBossOrAdmin(member);
+}
+
 const memberService = new MemberService();
 
 export function memberController(bot: Bot<MyContext>) {
-
     bot.command("start", async (ctx) => {
         if (!ctx.from) return; // nobody to reply to — silent exit is honest
 
@@ -72,26 +76,46 @@ export function memberController(bot: Bot<MyContext>) {
     });
 
     bot.hears("👥 Xodimlar ma'lumotlarini sozlash", async (ctx) => {
-        // Implementation for updating member information
+        if (!ctx.from) return;
+
+        const actor = await memberService.getMemberByTelegramId(ctx.from.id);
+        if (!actor || !canManageEmployees(actor)) {
+            await ctx.reply("Sizda bu buyruq uchun ruxsat yo'q.");
+            return;
+        }
+
         const users = await memberService.getAllMembers();
         const view = userPickerView(users);
         await ctx.reply(view.text, { reply_markup: view.keyboard });
     });
 
     bot.callbackQuery(/^user_picker:/, async (ctx) => {
+        await ctx.answerCallbackQuery();
         if (!ctx.from) return;
-        const userTgId = ctx.callbackQuery.data.split(":")[1];
 
+        const actor = await memberService.getMemberByTelegramId(ctx.from.id);
+        if (!actor || !canManageEmployees(actor)) {
+            await ctx.reply("Sizda bu buyruq uchun ruxsat yo'q.");
+            return;
+        }
+
+        const userTgId = ctx.callbackQuery.data.split(":")[1];
         const member = await memberService.getMemberByTelegramId(Number(userTgId));
         if (!member) return;
 
-        await ctx.answerCallbackQuery();
         const view = await userEditView(member);
         await ctx.reply(view.text, { reply_markup: view.keyboard });
     });
 
     bot.callbackQuery(/^edit_user:/, async (ctx) => {
+        await ctx.answerCallbackQuery();
         if (!ctx.from) return;
+
+        const actor = await memberService.getMemberByTelegramId(ctx.from.id);
+        if (!actor || !canManageEmployees(actor)) {
+            await ctx.reply("Sizda bu buyruq uchun ruxsat yo'q.");
+            return;
+        }
 
         const [telegramId, field] = ctx.callbackQuery.data.split(":")[1].split(",");
         if (!isEditableField(field)) return;
@@ -106,7 +130,6 @@ export function memberController(bot: Bot<MyContext>) {
         ctx.session.editingMemberTelegramId = member.telegramId;
         ctx.session.editingField = field;
 
-        await ctx.answerCallbackQuery();
         const view = askEditFieldDetailView(member.name, field);
         await ctx.reply(view.text, { reply_markup: view.keyboard });
     });
