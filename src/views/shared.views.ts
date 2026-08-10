@@ -3,7 +3,7 @@ import { Member } from "../libs/types/member";
 import { hasManagerPermission } from "../libs/utils/permission";
 
 function mainMenuKeyboard(member?: Member) {
-    const keyboard = new Keyboard()
+    const employeeKeyboard = new Keyboard()
         .text("✅ Check In")
         .text("🚪 Check Out")
         .row()
@@ -13,13 +13,24 @@ function mainMenuKeyboard(member?: Member) {
         .resized()
         .persistent();
 
-    if (member && (hasManagerPermission(member) || member?.type === "BOSS" || member?.type === "ADMIN")) {
-        keyboard.row().text("🏢 Filial hisoboti");
-        keyboard.row().text("👥 Xodimlar ma'lumotlarini sozlash");
-        keyboard.row().text("🏢 Filial qo'shish");
+    if (member?.type === "BOSS" || member?.type === "ADMIN") {
+        const keyboard = new Keyboard()
+            .text("🏢 Filial qo'shish")
+            .row()
+            .text("Filialga boshqaruchi saylash")
+            .row()
+            .text("📊 Filial hisoboti")
+            .resized()
+            .persistent();
+        return keyboard;
+    }
+    else if (member && (hasManagerPermission(member))) {
+        employeeKeyboard.row().text("🏢 Filial hisoboti");
+        employeeKeyboard.row().text("👥 Xodimlar ma'lumotlarini sozlash");
+
     }
 
-    return keyboard;
+    return employeeKeyboard;
 }
 
 export function mainMenuView(member: Member) {
