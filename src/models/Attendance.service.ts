@@ -34,7 +34,13 @@ class AttendanceService {
         if (!member) throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
         const open = await this.getOpenShift(member._id);
+        
         if (!open) throw new Errors(HttpCode.NOT_FOUND, Message.NO_OPEN_SHIFT);
+        
+        const elapsedMs = Date.now() - new Date(open.checkIn).getTime();
+        const elapsedHours = elapsedMs / (1000 * 60 * 60);
+
+        if (elapsedHours >= 20) throw new Errors(HttpCode.NOT_FOUND, Message.NO_OPEN_SHIFT);
 
         const closed = await this.attendanceModel.findByIdAndUpdate(
             open._id,
