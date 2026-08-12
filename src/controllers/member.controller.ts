@@ -1,10 +1,14 @@
 import { Bot } from "grammy";
 import { MyContext } from "../server";
 import MemberService from "../models/Member.service";
+import BranchService from "../models/Branch.service";
 import { askPhoneView, mainMenuView, errorView, userEditView, userPickerView, askEditFieldDetailView } from "../views/index";
 import Errors, { Message } from "../libs/Errors";
 import { Member, MemberInput, MemberManagerUpdate, EditableMemberField, EDITABLE_MEMBER_FIELDS } from "../libs/types/member";
 import { hasManagerPermission, isBossOrAdmin } from "../libs/utils/permission";
+
+const memberService = new MemberService();
+const branchService = new BranchService();
 
 function isEditableField(field: string): field is EditableMemberField {
     return (EDITABLE_MEMBER_FIELDS as readonly string[]).includes(field);
@@ -13,8 +17,6 @@ function isEditableField(field: string): field is EditableMemberField {
 function canManageEmployees(member: Member): boolean {
     return hasManagerPermission(member) || isBossOrAdmin(member);
 }
-
-const memberService = new MemberService();
 
 export function memberController(bot: Bot<MyContext>) {
     bot.command("start", async (ctx) => {
@@ -103,7 +105,8 @@ export function memberController(bot: Bot<MyContext>) {
         const member = await memberService.getMemberByTelegramId(Number(userTgId));
         if (!member) return;
 
-        const view = await userEditView(member);
+        const branch = member.branchId ? await branchService.getBranchById(member.branchId) : undefined;
+        const view = await userEditView(member, branch?.name || null);
         await ctx.reply(view.text, { reply_markup: view.keyboard });
     });
 
@@ -173,7 +176,8 @@ export function memberController(bot: Bot<MyContext>) {
         try {
             const updated = await memberService.updateMember(targetTelegramId, updateData);
             await ctx.reply("Ma'lumot muvaffaqiyatli yangilandi ✅");
-            const view = await userEditView(updated);
+            const branch = updated.branchId ? await branchService.getBranchById(updated.branchId) : undefined;
+            const view = await userEditView(updated, branch?.name || null);
             await ctx.reply(view.text, { reply_markup: view.keyboard });
         } catch (err) {
             if (err instanceof Errors) {

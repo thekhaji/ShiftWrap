@@ -1,8 +1,6 @@
 import { Keyboard, InlineKeyboard } from "grammy";
 import { Member } from "../libs/types/member";
-import BranchService from "../models/Branch.service";
 
-const branchService = new BranchService();
 
 export function askPhoneView() {
     return {
@@ -26,15 +24,13 @@ export function userPickerView(users: Member[]) {
     };
 }
 
-export async function userEditView(user: Member) {
+export function userEditView(user: Member, branchName: string | null) {
     const keyboard = new InlineKeyboard()
         .text("Telefon raqamini o'zgartirish", `edit_user:${user.telegramId},phone`).row()
         .text("Bank nomini o'zgartirish", `edit_user:${user.telegramId},bankName`).row()
         .text("Bank hisob raqamini o'zgartirish", `edit_user:${user.telegramId},bankAccount`).row()
         .text("Soatlik narxni o'zgartirish", `edit_user:${user.telegramId},hourlyRate`).row();
 
-    const branch = user.branchId ? await branchService.getBranchById(user.branchId) : undefined;
-    const branchName = branch && typeof branch !== "string" ? branch.name : branch;
     return {
         text: `Foydalanuvchi: ${user.name}\nTelefon: ${user.phone}\nFilial: ${branchName || "Noma'lum"}\nBank: ${user.bankName || "Noma'lum"}\nBank hisob raqami: ${user.bankAccount || "Noma'lum"}\nSoatlik narx: ${user.hourlyRate !== undefined ? user.hourlyRate : "Noma'lum"} won\n\nQaysi ma'lumotni o'zgartirmoqchisiz?`,
         keyboard,
