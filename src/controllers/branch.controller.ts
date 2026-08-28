@@ -4,29 +4,11 @@ import BranchService from '../models/Branch.service';
 import MemberService from '../models/Member.service';
 import { askBranchNameView, askLocationView, branchRegisteredView, mainMenuView } from '../views/index';
 import Errors from '../libs/Errors';
-import {branchPickerView} from '../views/branch.views';
 
 const branchService = new BranchService();
 const memberService = new MemberService();
 
 export function branchController(bot: Bot<MyContext>) {
-    bot.hears("📊 Filial hisoboti", async (ctx) => {
-        if (!ctx.from) return;
-
-        const branches = await branchService.getAllBranches();
-        if (branches.length === 0) {
-            await ctx.reply("Hozircha filiallar mavjud emas. Iltimos, avval filial qo'shing.");
-            return;
-        }
-
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1;
-
-        const view = branchPickerView(branches, year, month);
-        await ctx.reply(view.text, { reply_markup: view.keyboard });
-    });
-
     bot.hears("🏢 Filial qo'shish", async (ctx) => {
         if (!ctx.from) return;
         ctx.session.awaitingAction = "register_branch_name";

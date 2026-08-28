@@ -51,6 +51,9 @@ export function reportController(bot: Bot<MyContext>) {
 
     bot.hears("🏢 Filial hisoboti", async (ctx) => {
         if (!ctx.from) return;
+        ctx.session.awaitingAction = "get_branch_report";
+        ctx.session.awaitingSince = Date.now();
+        
         const member = await memberService.getMemberByTelegramId(ctx.from.id);
         if (!member) return;
 
@@ -58,12 +61,14 @@ export function reportController(bot: Bot<MyContext>) {
             await ctx.reply("Sizda bu buyruq uchun ruxsat yo'q.");
             return;
         }
-
-        // Scoped to the manager's own branch. Boss/admin accounts aren't tied to a single
-        // branch, so member.branchId is only guaranteed to exist for the manager case above —
-        // a branch picker for boss/admin isn't implemented yet.
-        const branchId = member.branchId!;
-        const branch = await branchService.getBranchById(branchId);
+        else if (hasManagerPermission(member)) {
+            const branchId = member.branchId!;
+            const branch = await branchService.getBranchById(branchId);
+        }
+        else if (isBossOrAdmin(member)) {
+            branchPickerView(await branchService.getAllBranches(), new Date().getFullYear(), new Date().getMonth() + 1, "get_branch_report");
+        }
+       
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth() + 1;

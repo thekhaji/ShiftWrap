@@ -17,10 +17,10 @@ export function branchRegisteredView(branch: Branch) {
     };
 }
 
-export function branchPickerView(branches: Branch[], year: number, month: number) {
+export function branchPickerView(branches: Branch[], year: number, month: number, sessionName?: string) {
     const keyboard = new InlineKeyboard();
     for (const branch of branches) {
-        keyboard.text(branch.name, `personal_report:${branch._id.toString()},${year},${month}`).row();
+        keyboard.text(branch.name, `${sessionName}:${branch._id.toString()},${year},${month}`).row();
     }
     return {
         text: `Qaysi filial uchun ${month}/${year} hisobot kerak?`,

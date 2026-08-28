@@ -10,7 +10,7 @@ import { reportController } from './controllers/report.controller';
 import { EditableMemberField } from './libs/types/member';
 
 export interface SessionData {
-    awaitingAction?: "checkin" | "checkout" | "register_branch_name" | "register_branch_location" | "edit_member_field";
+    awaitingAction?: "checkin" | "checkout" | "register_branch_name" | "register_branch_location" | "edit_member_field" | "get_branch_report";
     awaitingSince?: number;
     pendingBranchName?: string;
     editingMemberTelegramId?: number;
